@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Huawei AICC - MGI</title>
+
+</head>
+
+<body>
+    <img src="./background-mgi.png">
+    <script>
+        // Função para obter parâmetros da URL
+        function getUrlParameter(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        // Função para obter parâmetros do hash (para embed)
+        function getHashParameter(name) {
+            const hash = window.location.hash.substring(1);
+            const params = new URLSearchParams(hash);
+            return params.get(name);
+        }
+
+        // Função para comunicar com o parent window (se estiver em iframe)
+        function notifyParent(data) {
+            if (window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'form_submitted',
+                    data: data
+                }, '*');
+            }
+        }
+
+        // Função para redimensionar o iframe automaticamente
+        function resizeIframe() {
+            if (window.parent !== window) {
+                const height = document.body.scrollHeight;
+                window.parent.postMessage({
+                    type: 'resize',
+                    height: height
+                }, '*');
+            }
+        }
+
+        // Preencher campos com parâmetros da URL ou hash
+        document.addEventListener('DOMContentLoaded', function () {
+            // Tentar obter parâmetros da URL primeiro
+            let agente = getUrlParameter('agente');
+            let id = getUrlParameter('id');
+            let cpf = getUrlParameter('cpf');
+
+            // Se não encontrar na URL, tentar no hash (para embed)
+            if (!agente) agente = getHashParameter('agente');
+            if (!id) id = getHashParameter('id');
+            if (!cpf) cpf = getHashParameter('cpf');
+
+            if (agente) {
+                document.getElementById('agente').value = agente;
+            }
+
+            if (id) {
+                document.getElementById('id').value = id;
+            }
+
+            if (cpf) {
+                document.getElementById('cpf').value = cpf;
+            }
+
+            // Redimensionar iframe após carregamento
+            setTimeout(resizeIframe, 100);
+        });
+
+        // Função para mostrar o alerta personalizado
+        function showAlert() {
+            const alert = document.getElementById('customAlert');
+            alert.classList.add('show');
+
+            // Adicionar efeito de vibração no botão de envio
+            const submitBtn = document.querySelector('.submit-btn');
+            submitBtn.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                submitBtn.style.transform = 'scale(1)';
+            }, 150);
+        }
+
+        // Função para fechar o alerta
+        function closeAlert() {
+            const alert = document.getElementById('customAlert');
+            alert.classList.remove('show');
+        }
+
+        // Fechar alerta ao clicar fora dele
+        document.getElementById('customAlert').addEventListener('click', function (e) {
+            if (e.target === this) {
+                closeAlert();
+            }
+        });
+
+        // Manipular envio do formulário
+        document.getElementById('atendimentoForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData);
+
+            // Log dos dados
+            console.log('Dados do formulário:', data);
+
+            // Notificar o parent window
+            notifyParent(data);
+
+            // Mostrar alerta personalizado com delay para efeito
+            setTimeout(() => {
+                showAlert();
+            }, 200);
+        });
+
+        // Escutar mensagens do parent window
+        window.addEventListener('message', function (event) {
+            if (event.data.type === 'set_params') {
+                const { agente, id, cpf } = event.data;
+                if (agente) document.getElementById('agente').value = agente;
+                if (id) document.getElementById('id').value = id;
+                if (cpf) document.getElementById('cpf').value = cpf;
+            }
+        });
+
+        // Redimensionar quando o conteúdo mudar
+        const observer = new MutationObserver(function (mutations) {
+            resizeIframe();
+        });
+
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true,
+            attributes: true
+        });
+    </script>
+</body>
+
+</html>
